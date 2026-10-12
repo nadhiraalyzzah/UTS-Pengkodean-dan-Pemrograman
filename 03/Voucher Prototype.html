@@ -1,308 +1,39 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Voucher Kas Keluar | General Ledger</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    :root { color-scheme: light; }
-    body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-    .glass { background: rgba(255,255,255,.92); backdrop-filter: blur(12px); }
-    input, select { min-width: 0; }
-    .num { font-variant-numeric: tabular-nums; }
-  </style>
-</head>
-<body class="min-h-screen bg-slate-50 text-slate-800">
-  <div class="min-h-screen lg:grid lg:grid-cols-[250px_1fr]">
-    <aside class="bg-slate-950 px-6 py-7 text-white">
-      <div class="mb-10 flex items-center gap-3">
-        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-300 text-lg font-black text-slate-950">GL</div>
-        <div><p class="text-xs uppercase tracking-[.22em] text-slate-400">Finance Suite</p><h1 class="text-lg font-bold">LedgerFlow</h1></div>
-      </div>
-      <p class="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-500">Workspace</p>
-      <nav class="space-y-2" aria-label="Navigasi utama">
-        <a href="#overview" class="flex items-center gap-3 rounded-xl bg-white/10 px-4 py-3 text-sm font-medium text-white"><span>▦</span> Voucher Kas Keluar</a>
-        <a href="#journal-history" class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-300 hover:bg-white/5"><span>◷</span> Riwayat Jurnal</a>
-      </nav>
-      <div class="mt-12 rounded-2xl border border-white/10 bg-white/5 p-4">
-        <div class="mb-2 flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-emerald-400"></span><p class="text-sm font-semibold">Kontrol internal aktif</p></div>
-        <p class="text-xs leading-5 text-slate-400">Saldo debit-kredit divalidasi di browser dan diperiksa ulang oleh PostgreSQL sebelum posting.</p>
-      </div>
-      <p class="mt-10 text-xs leading-5 text-slate-500">Prototype akademik · Supabase / PostgreSQL</p>
-    </aside>
-
-    <main id="overview" class="px-4 py-6 sm:px-8 lg:px-10 lg:py-9">
-      <header class="mb-8 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-        <div>
-          <p class="mb-2 text-xs font-bold uppercase tracking-[.2em] text-amber-600">General Ledger / Cash Disbursement</p>
-          <h2 class="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">Voucher Kas Keluar</h2>
-          <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-500">Catat transaksi, cek keseimbangan jurnal secara langsung, lalu posting sebagai catatan yang tidak dapat diedit.</p>
-        </div>
-        <div class="glass flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 shadow-sm">
-          <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">✓</div>
-          <div><p class="text-xs text-slate-500">Status validasi</p><p id="connectionStatus" class="text-sm font-bold text-slate-700">Menunggu konfigurasi</p></div>
-        </div>
-      </header>
-
-      <section class="mb-6 grid gap-4 md:grid-cols-3">
-        <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p class="text-sm text-slate-500">Total Debit</p><p id="totalDebitCard" class="num mt-2 text-2xl font-black text-slate-950">Rp0,00</p>
-          <p class="mt-2 text-xs text-slate-400">Akumulasi sisi debit</p>
-        </article>
-        <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p class="text-sm text-slate-500">Total Kredit</p><p id="totalCreditCard" class="num mt-2 text-2xl font-black text-slate-950">Rp0,00</p>
-          <p class="mt-2 text-xs text-slate-400">Akumulasi sisi kredit</p>
-        </article>
-        <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p class="text-sm text-slate-500">Selisih</p><p id="differenceCard" class="num mt-2 text-2xl font-black text-rose-600">Rp0,00</p>
-          <div class="mt-2 flex items-center gap-2"><span id="balanceDot" class="h-2 w-2 rounded-full bg-slate-300"></span><span id="balanceText" class="text-xs font-semibold text-slate-500">Lengkapi baris jurnal</span></div>
-        </article>
-      </section>
-
-      <div id="notice" class="mb-6 hidden rounded-xl border px-4 py-3 text-sm" role="status" aria-live="polite"></div>
-
-      <section class="mb-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div class="flex flex-col gap-4 border-b border-slate-100 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
-          <div><h3 class="text-lg font-bold text-slate-950">Data Voucher</h3><p class="mt-1 text-sm text-slate-500">Nomor referensi harus unik untuk setiap voucher.</p></div>
-          <span class="w-fit rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">Status awal: DRAFT</span>
-        </div>
-        <div class="grid gap-5 px-5 py-6 sm:grid-cols-2 sm:px-7">
-          <label class="block"><span class="mb-2 block text-sm font-semibold">Tanggal transaksi</span><input id="voucherDate" type="date" required class="w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-100" /></label>
-          <label class="block"><span class="mb-2 block text-sm font-semibold">Nomor referensi</span><input id="referenceNo" maxlength="50" required placeholder="Contoh: VKK-2026-001" class="w-full rounded-xl border border-slate-300 px-3 py-3 text-sm outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-100" /></label>
-          <label class="block sm:col-span-2"><span class="mb-2 block text-sm font-semibold">Deskripsi transaksi</span><input id="description" required maxlength="500" placeholder="Contoh: Pembayaran biaya operasional kantor" class="w-full rounded-xl border border-slate-300 px-3 py-3 text-sm outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-100" /></label>
-        </div>
-      </section>
-
-      <section class="mb-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div class="flex flex-col gap-3 border-b border-slate-100 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
-          <div><h3 class="text-lg font-bold text-slate-950">Rincian Jurnal</h3><p class="mt-1 text-sm text-slate-500">Setiap baris harus mengisi debit atau kredit, bukan keduanya.</p></div>
-          <button id="addLineButton" type="button" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50">＋ Tambah baris</button>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full min-w-[850px] text-left text-sm">
-            <thead class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500"><tr>
-              <th class="px-5 py-3 font-bold">Akun</th><th class="px-4 py-3 font-bold">Keterangan</th><th class="px-4 py-3 text-right font-bold">Debit (Rp)</th><th class="px-4 py-3 text-right font-bold">Kredit (Rp)</th><th class="px-4 py-3 text-center font-bold">Aksi</th>
-            </tr></thead>
-            <tbody id="journalLines" class="divide-y divide-slate-100"></tbody>
-          </table>
-        </div>
-        <div class="flex flex-col gap-4 border-t border-slate-100 bg-slate-50 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
-          <p id="liveValidation" class="max-w-2xl text-sm font-medium text-slate-500">Isi akun dan nilai transaksi. Submit aktif hanya saat jurnal seimbang dan memiliki kredit pada akun kas.</p>
-          <button id="submitButton" type="button" disabled class="rounded-xl bg-slate-300 px-6 py-3 text-sm font-bold text-slate-500 transition disabled:cursor-not-allowed enabled:bg-amber-400 enabled:text-slate-950 enabled:hover:bg-amber-300">Posting Voucher</button>
-        </div>
-      </section>
-
-      <section id="journal-history" class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div class="flex items-center justify-between border-b border-slate-100 px-5 py-5 sm:px-7"><div><h3 class="text-lg font-bold text-slate-950">Riwayat Jurnal</h3><p class="mt-1 text-sm text-slate-500">Maksimal 10 jurnal terbaru milik akun yang sedang login.</p></div><button id="refreshHistory" type="button" class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-bold hover:bg-slate-50">Muat ulang</button></div>
-        <div id="historyList" class="divide-y divide-slate-100"><div class="px-5 py-8 text-center text-sm text-slate-400">Login dan konfigurasi Supabase untuk menampilkan riwayat.</div></div>
-      </section>
-
-      <section class="mt-6 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
-        <div class="flex items-start gap-3"><div class="rounded-xl bg-slate-100 p-2 text-slate-600">🔐</div><div><h3 class="font-bold text-slate-950">Login & koneksi Supabase</h3><p class="mt-1 text-sm leading-6 text-slate-500">Gunakan akun Supabase Auth yang sudah dibuat. Pada kode, isi SUPABASE_URL dan SUPABASE_ANON_KEY; jangan pernah menaruh service_role key di browser.</p></div></div>
-        <div class="mt-5 grid gap-3 sm:grid-cols-[1fr_1fr_auto_auto]">
-          <input id="emailInput" type="email" autocomplete="username" placeholder="Email akun" class="rounded-xl border border-slate-300 px-3 py-3 text-sm outline-none focus:border-amber-500" />
-          <input id="passwordInput" type="password" autocomplete="current-password" placeholder="Password" class="rounded-xl border border-slate-300 px-3 py-3 text-sm outline-none focus:border-amber-500" />
-          <button id="loginButton" type="button" class="rounded-xl bg-slate-900 px-4 py-3 text-sm font-bold text-white hover:bg-slate-700">Login</button>
-          <button id="logoutButton" type="button" class="rounded-xl border border-slate-300 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">Logout</button>
-        </div>
-        <p id="userSession" class="mt-3 text-xs text-slate-500">Belum login.</p>
-      </section>
-      <footer class="py-8 text-center text-xs text-slate-400">LedgerFlow prototype · PostgreSQL constraints, RPC, RLS, SHA-256 audit checksum</footer>
-    </main>
-  </div>
-
-<script>
-  // Isi URL project dan anon/publishable key dari Supabase Project Settings > API.
-  // Jangan menaruh service_role key di sisi browser.
-  const SUPABASE_URL = "https://YOUR-PROJECT-REF.supabase.co";
-  const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_OR_PUBLISHABLE_KEY";
-
-  const $ = (id) => document.getElementById(id);
-  const money = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const state = { client: null, session: null, accounts: [], lines: [newLine(), newLine()], busy: false };
-  function newLine() { return { account_id: "", memo: "", debit: "", credit: "" }; }
-  function configured() {
-    return SUPABASE_URL.startsWith("https://") && !SUPABASE_URL.includes("YOUR-PROJECT") &&
-      SUPABASE_ANON_KEY.length > 20 && !SUPABASE_ANON_KEY.includes("YOUR_SUPABASE");
-  }
-  function safe(value) {
-    return String(value ?? "").replace(/[&<>"']/g, (char) => ({"&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"}[char]));
-  }
-  function showNotice(message, type = "info") {
-    const el = $("notice");
-    el.className = "mb-6 rounded-xl border px-4 py-3 text-sm";
-    const styles = { success: "border-emerald-200 bg-emerald-50 text-emerald-800", error: "border-rose-200 bg-rose-50 text-rose-800", info: "border-sky-200 bg-sky-50 text-sky-800" };
-    el.classList.add(...styles[type].split(" "));
-    el.textContent = message;
-    el.classList.remove("hidden");
-  }
-  function hideNotice() { $("notice").classList.add("hidden"); }
-  function amount(value) { const n = Number(value); return Number.isFinite(n) && n >= 0 ? Math.round((n + Number.EPSILON) * 100) / 100 : 0; }
-  function totals() {
-    const debit = state.lines.reduce((sum, line) => sum + amount(line.debit), 0);
-    const credit = state.lines.reduce((sum, line) => sum + amount(line.credit), 0);
-    const cashCredit = state.lines.some((line) => {
-      const account = state.accounts.find((item) => item.account_code === line.account_id);
-      return Boolean(account?.is_cash_account) && amount(line.credit) > 0;
-    });
-    const badLine = state.lines.some((line) => {
-      const d = amount(line.debit), c = amount(line.credit);
-      return (d === 0 && c === 0) || (d > 0 && c > 0) || !line.account_id;
-    });
-    const balanced = state.lines.length >= 2 && debit > 0 && debit === credit && !badLine;
-    return { debit, credit, difference: Math.abs(debit - credit), balanced, cashCredit, badLine };
-  }
-  function optionsFor(selected) {
-    return `<option value="">Pilih akun...</option>` + state.accounts.map((a) =>
-      `<option value="${safe(a.account_code)}" ${a.account_code === selected ? "selected" : ""}>${safe(a.account_code)} · ${safe(a.account_name)}${a.is_cash_account ? " (Kas)" : ""}</option>`
-    ).join("");
-  }
-  function renderLines() {
-    $("journalLines").innerHTML = state.lines.map((line, index) => `
-      <tr class="align-top">
-        <td class="px-5 py-3"><select data-index="${index}" data-field="account_id" aria-label="Akun baris ${index + 1}" class="w-64 rounded-lg border border-slate-300 bg-white px-2 py-2.5 text-xs outline-none focus:border-amber-500">${optionsFor(line.account_id)}</select></td>
-        <td class="px-4 py-3"><input data-index="${index}" data-field="memo" aria-label="Keterangan baris ${index + 1}" value="${safe(line.memo)}" placeholder="Keterangan" class="w-44 rounded-lg border border-slate-300 px-2 py-2.5 text-xs outline-none focus:border-amber-500" /></td>
-        <td class="px-4 py-3"><input data-index="${index}" data-field="debit" aria-label="Debit baris ${index + 1}" value="${safe(line.debit)}" type="number" min="0" step="0.01" placeholder="0,00" class="w-32 rounded-lg border border-slate-300 px-2 py-2.5 text-right text-xs outline-none focus:border-amber-500" /></td>
-        <td class="px-4 py-3"><input data-index="${index}" data-field="credit" aria-label="Kredit baris ${index + 1}" value="${safe(line.credit)}" type="number" min="0" step="0.01" placeholder="0,00" class="w-32 rounded-lg border border-slate-300 px-2 py-2.5 text-right text-xs outline-none focus:border-amber-500" /></td>
-        <td class="px-4 py-3 text-center"><button data-remove="${index}" type="button" aria-label="Hapus baris ${index + 1}" title="${state.lines.length <= 2 ? "Minimal dua baris" : "Hapus baris"}" ${state.lines.length <= 2 ? "disabled" : ""} class="rounded-lg px-3 py-2 text-xs font-bold ${state.lines.length <= 2 ? "cursor-not-allowed text-slate-300" : "text-rose-600 hover:bg-rose-50"}">Hapus</button></td>
-      </tr>`).join("");
-    updateTotals();
-  }
-  function updateTotals() {
-    const t = totals();
-    $("totalDebitCard").textContent = money.format(t.debit);
-    $("totalCreditCard").textContent = money.format(t.credit);
-    $("differenceCard").textContent = money.format(t.difference);
-    $("differenceCard").className = `num mt-2 text-2xl font-black ${t.balanced ? "text-emerald-600" : "text-rose-600"}`;
-    $("balanceDot").className = `h-2 w-2 rounded-full ${t.balanced && t.cashCredit ? "bg-emerald-500" : "bg-rose-400"}`;
-    $("balanceText").textContent = t.balanced && t.cashCredit ? "Seimbang & siap divalidasi" : "Belum memenuhi ketentuan";
-    $("balanceText").className = `text-xs font-semibold ${t.balanced && t.cashCredit ? "text-emerald-700" : "text-rose-600"}`;
-    let message = "";
-    if (state.lines.length < 2) message = "Jurnal harus mempunyai setidaknya dua baris.";
-    else if (t.badLine) message = "Pilih akun dan isi tepat satu sisi (debit atau kredit) pada setiap baris.";
-    else if (!t.balanced) message = "Total debit dan kredit harus sama serta lebih besar dari nol.";
-    else if (!t.cashCredit) message = "Untuk voucher kas keluar, kreditkan setidaknya satu akun yang ditandai sebagai akun kas.";
-    else if (!state.session) message = "Jurnal seimbang; login ke Supabase untuk melakukan posting.";
-    else message = "Validasi lokal lolos. Database akan melakukan pemeriksaan ulang sebelum posting.";
-    $("liveValidation").textContent = message;
-    $("submitButton").disabled = !(configured() && state.session && !state.busy && t.balanced && t.cashCredit);
-  }
-  async function loadAccounts() {
-    if (!state.client) return;
-    const { data, error } = await state.client.from("chart_of_accounts").select("account_code, account_name, is_cash_account").order("account_code");
-    if (error) { showNotice("Gagal memuat daftar akun: " + error.message, "error"); return; }
-    state.accounts = data || [];
-    renderLines();
-  }
-  async function loadHistory() {
-    if (!state.client || !state.session) {
-      $("historyList").innerHTML = `<div class="px-5 py-8 text-center text-sm text-slate-400">Login untuk menampilkan riwayat.</div>`;
-      return;
-    }
-    const { data, error } = await state.client.from("journal_headers")
-      .select("id, txn_date, reference_no, description, status_posting, created_at, hash_checksum")
-      .eq("created_by", state.session.user.id).order("created_at", { ascending: false }).limit(10);
-    if (error) { $("historyList").innerHTML = `<div class="px-5 py-6 text-sm text-rose-600">Riwayat tidak dapat dimuat: ${safe(error.message)}</div>`; return; }
-    if (!data?.length) { $("historyList").innerHTML = `<div class="px-5 py-8 text-center text-sm text-slate-400">Belum ada jurnal yang diposting.</div>`; return; }
-    $("historyList").innerHTML = data.map((item) => `
-      <article class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
-        <div><p class="font-bold text-slate-900">${safe(item.reference_no)} <span class="ml-2 rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700">${safe(item.status_posting)}</span></p><p class="mt-1 text-sm text-slate-500">${safe(item.description)}</p><p class="mt-1 text-xs text-slate-400">${safe(item.txn_date)} · ${safe(item.created_at || "")}</p></div>
-        <div class="max-w-xs text-left sm:text-right"><p class="text-xs text-slate-400">SHA-256 checksum</p><p title="${safe(item.hash_checksum || "Belum tersedia")}" class="mt-1 break-all font-mono text-[10px] text-slate-500">${safe(item.hash_checksum || "-" )}</p></div>
-      </article>`).join("");
-  }
-  async function refreshAuth(session) {
-    state.session = session;
-    $("userSession").textContent = session ? `Login sebagai ${session.user.email || session.user.id}` : "Belum login.";
-    $("connectionStatus").textContent = session ? "Supabase terhubung · login aktif" : (configured() ? "Supabase terhubung · belum login" : "Lengkapi konfigurasi Supabase");
-    if (session) { await loadAccounts(); await loadHistory(); }
-    else { state.accounts = []; renderLines(); await loadHistory(); }
-    updateTotals();
-  }
-  async function submitVoucher() {
-    hideNotice();
-    if (!state.client || !state.session) return showNotice("Konfigurasi Supabase dan login diperlukan.", "error");
-    const t = totals();
-    if (!t.balanced || !t.cashCredit) return showNotice("Voucher belum lolos validasi balance atau akun kas.", "error");
-    const p_lines = state.lines.map((line) => ({
-      account_id: line.account_id,
-      memo: line.memo.trim(),
-      debit: amount(line.debit),
-      credit: amount(line.credit)
-    }));
-    state.busy = true; updateTotals(); $("submitButton").textContent = "Memproses...";
-    try {
-      const { data, error } = await state.client.rpc("post_cash_voucher", {
-        p_date: $("voucherDate").value,
-        p_reference: $("referenceNo").value.trim(),
-        p_description: $("description").value.trim(),
-        p_lines
-      });
-      if (error) throw error;
-      showNotice(`Berhasil diposting. ID jurnal: ${data}. Header dan detail sekarang terkunci; koreksi harus lewat jurnal pembalik.`, "success");
-      state.lines = [newLine(), newLine()];
-      $("referenceNo").value = ""; $("description").value = "";
-      renderLines(); await loadHistory();
-    } catch (error) {
-      showNotice("Posting ditolak: " + (error.message || String(error)), "error");
-    } finally {
-      state.busy = false; $("submitButton").textContent = "Posting Voucher"; updateTotals();
-    }
-  }
-  $("journalLines").addEventListener("input", (event) => {
-    const el = event.target;
-    if (!el.dataset.field) return;
-    const index = Number(el.dataset.index);
-    state.lines[index][el.dataset.field] = el.value;
-    updateTotals();
-  });
-  $("journalLines").addEventListener("change", (event) => {
-    const el = event.target;
-    if (!el.dataset.field) return;
-    state.lines[Number(el.dataset.index)][el.dataset.field] = el.value;
-    updateTotals();
-  });
-  $("journalLines").addEventListener("click", (event) => {
-    const button = event.target.closest("[data-remove]");
-    if (!button || state.lines.length <= 2) return;
-    state.lines.splice(Number(button.dataset.remove), 1); renderLines();
-  });
-  $("addLineButton").addEventListener("click", () => { state.lines.push(newLine()); renderLines(); });
-  $("submitButton").addEventListener("click", submitVoucher);
-  $("refreshHistory").addEventListener("click", loadHistory);
-  $("loginButton").addEventListener("click", async () => {
-    hideNotice();
-    if (!state.client) return showNotice("Isi SUPABASE_URL dan SUPABASE_ANON_KEY pada web/index.html terlebih dahulu.", "error");
-    const { error } = await state.client.auth.signInWithPassword({ email: $("emailInput").value.trim(), password: $("passwordInput").value });
-    if (error) showNotice("Login gagal: " + error.message, "error"); else showNotice("Login berhasil.", "success");
-  });
-  $("logoutButton").addEventListener("click", async () => {
-    if (!state.client) return;
-    const { error } = await state.client.auth.signOut();
-    if (error) showNotice("Logout gagal: " + error.message, "error"); else showNotice("Logout berhasil.", "info");
-  });
-
-  const today = new Date();
-  $("voucherDate").value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-  if (configured() && window.supabase?.createClient) {
-    state.client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    state.client.auth.getSession().then(({ data, error }) => {
-      if (error) showNotice("Gagal memeriksa sesi: " + error.message, "error");
-      refreshAuth(data?.session || null);
-    });
-    state.client.auth.onAuthStateChange((_event, session) => {
-      // Jalankan update setelah callback auth selesai agar tidak menahan lock sesi Supabase.
-      setTimeout(() => { refreshAuth(session).catch((err) => showNotice("Gagal memperbarui sesi: " + err.message, "error")); }, 0);
-    });
-  } else {
-    $("connectionStatus").textContent = "Lengkapi konfigurasi Supabase";
-    showNotice("Mode tampilan: isi SUPABASE_URL dan SUPABASE_ANON_KEY di bagian script untuk mengaktifkan database. Untuk keamanan, gunakan anon/publishable key, bukan service_role key.", "info");
-  }
-  renderLines();
-</script>
-</body>
-</html>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voucher Entri Transaksi Kas Keluar - Modul Auditor</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ledger: {
+                            dark: '#1E293B',
+                            light: '#F8FAFC',
+                            card: '#FFFFFF',
+                            border: '#CBD5E1',
+                            primary: '#0F172A',
+                            accent: '#2563EB',
+                            success: '#16A34A',
+                            danger: '#DC2626'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .font-mono-ledger {
+            font-family: 'JetBrains Mono', monospace;
+        }
     </style>
 </head>
 <body class="bg-ledger-light text-slate-800 min-h-screen flex flex-col">
