@@ -1,1 +1,748 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voucher Entri Transaksi Kas Keluar - Modul Auditor</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ledger: {
+                            dark: '#1E293B',
+                            light: '#F8FAFC',
+                            card: '#FFFFFF',
+                            border: '#CBD5E1',
+                            primary: '#0F172A',
+                            accent: '#2563EB',
+                            success: '#16A34A',
+                            danger: '#DC2626'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .font-mono-ledger {
+            font-family: 'JetBrains Mono', monospace;
+        }
+    </style>
+</head>
+<body class="bg-ledger-light text-slate-800 min-h-screen flex flex-col">
 
+    <header class="bg-ledger-dark text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div>
+                <div class="flex items-center gap-2">
+                    <svg class="w-7 h-7 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <h1 class="text-xl sm:text-2xl font-bold tracking-tight">Voucher Kas Keluar & Buku Besar</h1>
+                </div>
+                <p class="text-xs sm:text-sm text-slate-300 mt-1">Purwarupa Akuntansi & Audit Trail Immutability (Zero-Discrepancy)</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <button id="btn-isi-contoh" type="button" class="bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm font-medium px-3 py-2 rounded-lg shadow transition focus:ring-2 focus:ring-amber-400 focus:outline-none">
+                    Isi Contoh Uji
+                </button>
+                <div class="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 text-xs font-mono-ledger text-emerald-400">
+                    User: kasir.demo
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- KOLOM KIRI & TENGAH: Form Entri Voucher & Baris Jurnal (Span 2) -->
+        <div class="lg:col-span-2 space-y-6">
+            
+            <!-- SECTION 1: Header Voucher -->
+            <section class="bg-ledger-card rounded-xl shadow-sm border border-ledger-border p-5 sm:p-6">
+                <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
+                    <h2 class="text-base sm:text-lg font-semibold text-ledger-primary flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-ledger-accent"></span>
+                        Informasi Header Voucher
+                    </h2>
+                    <span class="text-xs text-slate-500 font-mono-ledger">ID Otomatis</span>
+                </div>
+
+                <form id="voucher-form" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="field-tanggal" class="block text-xs font-medium text-slate-700 mb-1">Tanggal Transaksi</label>
+                        <input type="date" id="field-tanggal" required class="w-full rounded-lg border border-ledger-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ledger-accent">
+                    </div>
+
+                    <div>
+                        <label for="field-nomor" class="block text-xs font-medium text-slate-700 mb-1">Nomor Bukti</label>
+                        <input type="text" id="field-nomor" readonly class="w-full rounded-lg border border-ledger-border bg-slate-100 px-3 py-2 text-sm font-mono-ledger text-slate-600 focus:outline-none">
+                        <p class="text-[10px] text-slate-400 mt-0.5">Auto-generated, dijamin unik.</p>
+                    </div>
+
+                    <div>
+                        <label for="field-penerima" class="block text-xs font-medium text-slate-700 mb-1">Dibayarkan Kepada (Penerima)</label>
+                        <input type="text" id="field-penerima" placeholder="Contoh: PT Vendor Solusi Mandiri" required class="w-full rounded-lg border border-ledger-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ledger-accent">
+                    </div>
+
+                    <div>
+                        <label for="field-aktivitas" class="block text-xs font-medium text-slate-700 mb-1">Aktivitas Arus Kas</label>
+                        <select id="field-aktivitas" class="w-full rounded-lg border border-ledger-border px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-ledger-accent">
+                            <option value="Operasi">Operasi</option>
+                            <option value="Investasi">Investasi</option>
+                            <option value="Pendanaan">Pendanaan</option>
+                        </select>
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label for="field-deskripsi" class="block text-xs font-medium text-slate-700 mb-1">Deskripsi / Uraian Transaksi</label>
+                        <textarea id="field-deskripsi" rows="2" placeholder="Jelaskan detail pengeluaran kas..." required class="w-full rounded-lg border border-ledger-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ledger-accent"></textarea>
+                    </div>
+                </form>
+            </section>
+
+            <!-- SECTION 2: Baris Jurnal Dinamis -->
+            <section class="bg-ledger-card rounded-xl shadow-sm border border-ledger-border p-5 sm:p-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 pb-2 border-b border-slate-100 gap-2">
+                    <h2 class="text-base sm:text-lg font-semibold text-ledger-primary flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+                        Baris Jurnal Akuntansi
+                    </h2>
+                    <button type="button" id="btn-tambah-baris" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium px-3 py-1.5 rounded-lg shadow transition flex items-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-slate-500">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        Tambah Baris
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-[600px]">
+                        <thead>
+                            <tr class="border-b border-ledger-border text-xs text-slate-500 uppercase tracking-wider bg-slate-50">
+                                <th class="py-2.5 px-3 font-semibold w-5/12">Akun Buku Besar</th>
+                                <th class="py-2.5 px-3 font-semibold w-3/12 text-right">Debit (Rp)</th>
+                                <th class="py-2.5 px-3 font-semibold w-3/12 text-right">Kredit (Rp)</th>
+                                <th class="py-2.5 px-3 font-semibold w-1/12 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="journal-rows-container" class="divide-y divide-slate-100 text-sm font-mono-ledger">
+                            <!-- Rows will be injected via JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Live Balanced Indicator & Subtotal -->
+                <div class="mt-5 bg-slate-50 rounded-xl p-4 border border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
+                    <div>
+                        <span class="block text-xs text-slate-500 font-sans">Total Debit</span>
+                        <span id="txt-total-debit" class="text-base font-bold text-slate-800">Rp 0</span>
+                    </div>
+                    <div>
+                        <span class="block text-xs text-slate-500 font-sans">Total Kredit</span>
+                        <span id="txt-total-kredit" class="text-base font-bold text-slate-800">Rp 0</span>
+                    </div>
+                    <div class="sm:text-right flex flex-col sm:items-end">
+                        <span class="block text-xs text-slate-500 font-sans mb-1">Status Keseimbangan</span>
+                        <div id="badge-balance" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                            Belum Seimbang
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- KOLOM KANAN: Panel Rule Checker, Submit & Ledger History (Span 1) -->
+        <div class="space-y-6">
+            
+            <!-- SECTION 3: Live Rule Checker & Posting Button -->
+            <section class="bg-ledger-card rounded-xl shadow-sm border border-ledger-border p-5 sm:p-6">
+                <h2 class="text-base font-semibold text-ledger-primary mb-3 pb-2 border-b border-slate-100 flex items-center justify-between">
+                    <span>Aturan Validasi (Zero-Discrepancy)</span>
+                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                </h2>
+
+                <ul id="rule-checklist" class="space-y-2.5 text-xs text-slate-600 mb-6">
+                    <li id="rule-header" class="flex items-center gap-2">
+                        <span class="rule-icon w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold bg-slate-200 text-slate-600">✕</span>
+                        <span>Header terisi lengkap (Tanggal, Nomor, Penerima, Deskripsi)</span>
+                    </li>
+                    <li id="rule-lines" class="flex items-center gap-2">
+                        <span class="rule-icon w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold bg-slate-200 text-slate-600">✕</span>
+                        <span>Baris valid (Akun dipilih, isi 1 sisi saja, nilai &gt; 0)</span>
+                    </li>
+                    <li id="rule-cash" class="flex items-center gap-2">
+                        <span class="rule-icon w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold bg-slate-200 text-slate-600">✕</span>
+                        <span>Minimal 1 baris kredit pada Kas atau Bank (Kas Keluar)</span>
+                    </li>
+                    <li id="rule-balance" class="flex items-center gap-2">
+                        <span class="rule-icon w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold bg-slate-200 text-slate-600">✕</span>
+                        <span>Total Debit = Total Kredit dan &gt; 0 (Seimbang)</span>
+                    </li>
+                </ul>
+
+                <button type="button" id="btn-posting" disabled class="w-full bg-ledger-accent hover:bg-blue-700 disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-semibold py-2.5 px-4 rounded-xl shadow transition text-sm flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    Posting Jurnal (Immutability)
+                </button>
+            </section>
+
+            <!-- SECTION 4: Daftar Jurnal Posted & Immutability Check -->
+            <section class="bg-ledger-card rounded-xl shadow-sm border border-ledger-border p-5 sm:p-6">
+                <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-100">
+                    <h2 class="text-base font-semibold text-ledger-primary">Daftar Jurnal Terposting</h2>
+                    <button type="button" id="btn-verify-chain" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-2.5 py-1 rounded border border-slate-300 transition">
+                        Verifikasi Rantai Hash
+                    </button>
+                </div>
+                
+                <div id="posted-journals-container" class="space-y-3 max-h-[350px] overflow-y-auto pr-1">
+                    <p class="text-xs text-slate-400 italic text-center py-4">Belum ada transaksi terposting.</p>
+                </div>
+            </section>
+
+            <!-- SECTION 5: Audit Log Append-Only -->
+            <section class="bg-ledger-card rounded-xl shadow-sm border border-ledger-border p-5 sm:p-6">
+                <h2 class="text-base font-semibold text-ledger-primary mb-3 pb-2 border-b border-slate-100">Audit Log (Append-Only)</h2>
+                <div id="audit-log-container" class="bg-slate-900 text-emerald-400 font-mono-ledger text-[11px] p-3 rounded-lg max-h-[220px] overflow-y-auto space-y-1.5">
+                    <div class="text-slate-500">// Sistem siap merekam aktivitas audit...</div>
+                </div>
+            </section>
+
+        </div>
+
+    </main>
+
+    <!-- Modal Pesan Custom Pengganti Alert -->
+    <div id="custom-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 transform transition-all">
+            <div class="flex items-center gap-3 mb-3">
+                <div id="modal-icon-container" class="w-10 h-10 rounded-full flex items-center justify-center bg-blue-100 text-blue-600 font-bold">i</div>
+                <h3 id="modal-title" class="text-lg font-bold text-slate-800">Informasi</h3>
+            </div>
+            <p id="modal-message" class="text-sm text-slate-600 mb-6 leading-relaxed">Pesan sistem...</p>
+            <div class="flex justify-end">
+                <button type="button" id="modal-close-btn" class="bg-ledger-accent hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition focus:outline-none focus:ring-2 focus:ring-blue-400">
+                    Mengerti
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data Master Akun Sesuai Spesifikasi
+        const ACCOUNTS = [
+            { code: "1-1100", name: "1-1100 Kas", isCash: true },
+            { code: "1-1200", name: "1-1200 Bank", isCash: true },
+            { code: "1-1300", name: "1-1300 Persediaan Barang Dagang", isCash: false },
+            { code: "2-1100", name: "2-1100 Utang Usaha", isCash: false },
+            { code: "5-2100", name: "5-2100 Beban Gaji", isCash: false },
+            { code: "5-2200", name: "5-2200 Beban Sewa", isCash: false },
+            { code: "5-2300", name: "5-2300 Beban Listrik dan Air", isCash: false }
+        ];
+
+        // State Aplikasi
+        let journalRows = [];
+        let postedJournals = [];
+        let auditLogs = [];
+        let autoNumberCounter = 1;
+
+        // Inisialisasi awal saat halaman dimuat
+        window.addEventListener('DOMContentLoaded', () => {
+            // Set tanggal default hari ini
+            const todayStr = new Date().toISOString().split('T')[0];
+            document.getElementById('field-tanggal').value = todayStr;
+
+            // Generate nomor bukti awal
+            updateVoucherNumber();
+
+            // Tambahkan baris awal default (minimal 2 baris)
+            addRow();
+            addRow();
+
+            // Event listeners
+            document.getElementById('btn-tambah-baris').addEventListener('click', () => {
+                addRow();
+                validateForm();
+            });
+
+            document.getElementById('voucher-form').addEventListener('input', validateForm);
+            document.getElementById('btn-posting').addEventListener('click', postJournal);
+            document.getElementById('btn-verify-chain').addEventListener('click', verifyHashChain);
+            document.getElementById('btn-isi-contoh').addEventListener('click', isiContohUji);
+            document.getElementById('modal-close-btn').addEventListener('click', closeModal);
+
+            // Validasi awal
+            validateForm();
+            logAudit('SYSTEM_INIT', 'Sistem voucher kas keluar diinisialisasi.');
+        });
+
+        // Fungsi Modal Kustom
+        function showModal(title, message, isError = false) {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-message').textContent = message;
+            const iconContainer = document.getElementById('modal-icon-container');
+            if (isError) {
+                iconContainer.className = "w-10 h-10 rounded-full flex items-center justify-center bg-red-100 text-red-600 font-bold";
+                iconContainer.innerHTML = "!";
+            } else {
+                iconContainer.className = "w-10 h-10 rounded-full flex items-center justify-center bg-blue-100 text-blue-600 font-bold";
+                iconContainer.innerHTML = "i";
+            }
+            document.getElementById('custom-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('custom-modal').classList.add('hidden');
+        }
+
+        // Generate Nomor Bukti Otomatis Unik
+        function updateVoucherNumber() {
+            const year = new Date().getFullYear();
+            const paddedNum = String(autoNumberCounter).padStart(3, '0');
+            const nomor = `KK-${year}-${paddedNum}`;
+            
+            // Cek apakah nomor sudah ada di postedJournals
+            const exists = postedJournals.some(j => j.nomorBukti === nomor);
+            if (exists) {
+                autoNumberCounter++;
+                updateVoucherNumber();
+            } else {
+                document.getElementById('field-nomor').value = nomor;
+            }
+        }
+
+        // Tambah Baris Jurnal
+        function addRow(accountCode = "", debit = 0, kredit = 0) {
+            const rowId = 'row_' + Math.random().toString(36).substr(2, 9);
+            journalRows.push({
+                id: rowId,
+                account: accountCode,
+                debit: debit,
+                kredit: kredit
+            });
+            renderRows();
+        }
+
+        // Hapus Baris Jurnal
+        function removeRow(rowId) {
+            if (journalRows.length <= 2) {
+                showModal("Peringatan", "Minimal harus ada 2 baris jurnal dalam voucher.", true);
+                return;
+            }
+            journalRows = journalRows.filter(r => r.id !== rowId);
+            renderRows();
+            validateForm();
+        }
+
+        // Render Baris Jurnal ke DOM
+        function renderRows() {
+            const container = document.getElementById('journal-rows-container');
+            container.innerHTML = '';
+
+            journalRows.forEach((row, index) => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-slate-100 hover:bg-slate-50/50 transition";
+                
+                // Dropdown Akun
+                let optionsHtml = '<option value="">-- Pilih Akun --</option>';
+                ACCOUNTS.forEach(acc => {
+                    const selected = acc.code === row.account ? 'selected' : '';
+                    optionsHtml += `<option value="${acc.code}" ${selected}>${acc.name}</option>`;
+                });
+
+                tr.innerHTML = `
+                    <td class="py-2.5 px-3">
+                        <select onchange="updateRowData('${row.id}', 'account', this.value)" class="w-full text-xs font-sans rounded-lg border border-ledger-border px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-ledger-accent">
+                            ${optionsHtml}
+                        </select>
+                    </td>
+                    <td class="py-2.5 px-3 text-right">
+                        <input type="number" min="0" step="1" value="${row.debit || ''}" placeholder="0" oninput="updateRowData('${row.id}', 'debit', this.value)" class="w-full text-right text-xs rounded-lg border border-ledger-border px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-ledger-accent">
+                    </td>
+                    <td class="py-2.5 px-3 text-right">
+                        <input type="number" min="0" step="1" value="${row.kredit || ''}" placeholder="0" oninput="updateRowData('${row.id}', 'kredit', this.value)" class="w-full text-right text-xs rounded-lg border border-ledger-border px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-ledger-accent">
+                    </td>
+                    <td class="py-2.5 px-3 text-center">
+                        <button type="button" onclick="removeRow('${row.id}')" class="text-slate-400 hover:text-red-600 p-1 rounded transition focus:outline-none" title="Hapus baris">
+                            <svg class="w-4 h-4 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </td>
+                `;
+                container.appendChild(tr);
+            });
+
+            calculateTotals();
+        }
+
+        // Update Nilai Baris & Perhitungan Satuan Sen (Integer)
+        function updateRowData(rowId, field, value) {
+            const row = journalRows.find(r => r.id === rowId);
+            if (!row) return;
+
+            if (field === 'account') {
+                row.account = value;
+            } else if (field === 'debit') {
+                let val = Math.round(parseFloat(value) || 0);
+                row.debit = val;
+                if (val > 0) {
+                    row.kredit = 0; // Hanya isi salah satu sisi
+                }
+            } else if (field === 'kredit') {
+                let val = Math.round(parseFloat(value) || 0);
+                row.kredit = val;
+                if (val > 0) {
+                    row.debit = 0; // Hanya isi salah satu sisi
+                }
+            }
+            renderRows();
+            validateForm();
+        }
+
+        // Kalkulasi Total dan Format Rupiah (Presisi Sen/Integer)
+        function calculateTotals() {
+            let totalDebit = 0;
+            let totalKredit = 0;
+
+            journalRows.forEach(r => {
+                totalDebit += r.debit;
+                totalKredit += r.kredit;
+            });
+
+            document.getElementById('txt-total-debit').textContent = formatRupiah(totalDebit);
+            document.getElementById('txt-total-kredit').textContent = formatRupiah(totalKredit);
+
+            const badge = document.getElementById('badge-balance');
+            const diff = Math.abs(totalDebit - totalKredit);
+
+            if (totalDebit > 0 && totalDebit === totalKredit) {
+                badge.className = "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700";
+                badge.textContent = "Seimbang";
+            } else {
+                badge.className = "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700";
+                badge.textContent = "Belum Seimbang (Selisih: " + formatRupiah(diff) + ")";
+            }
+
+            return { totalDebit, totalKredit, isBalanced: (totalDebit > 0 && totalDebit === totalKredit) };
+        }
+
+        function formatRupiah(number) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(number);
+        }
+
+        // Validasi Aturan & Rule Checker Real-time (Zero-Discrepancy)
+        function validateForm() {
+            const tanggal = document.getElementById('field-tanggal').value;
+            const nomor = document.getElementById('field-nomor').value;
+            const penerima = document.getElementById('field-penerima').value.trim();
+            const deskripsi = document.getElementById('field-deskripsi').value.trim();
+
+            // (a) Header terisi
+            const isHeaderValid = tanggal !== '' && nomor !== '' && penerima !== '' && deskripsi !== '';
+            updateRuleUI('rule-header', isHeaderValid);
+
+            // (b) Tiap baris memilih akun & mengisi HANYA salah satu sisi > 0
+            let isLinesValid = journalRows.length >= 2;
+            journalRows.forEach(r => {
+                if (!r.account) isLinesValid = false;
+                const hasDebit = r.debit > 0 && r.kredit === 0;
+                const hasKredit = r.kredit > 0 && r.debit === 0;
+                if (!hasDebit && !hasKredit) isLinesValid = false;
+            });
+            updateRuleUI('rule-lines', isLinesValid);
+
+            // (c) Minimal satu baris kredit pada akun Kas atau Bank (Kas Keluar)
+            let hasCashCredit = false;
+            journalRows.forEach(r => {
+                if (r.kredit > 0) {
+                    const accObj = ACCOUNTS.find(a => a.code === r.account);
+                    if (accObj && accObj.isCash) {
+                        hasCashCredit = true;
+                    }
+                }
+            });
+            updateRuleUI('rule-cash', hasCashCredit);
+
+            // (d) Total debit = total kredit dan > 0
+            const totals = calculateTotals();
+            updateRuleUI('rule-balance', totals.isBalanced);
+
+            // Tombol posting aktif hanya jika SEMUA terpenuhi
+            const allValid = isHeaderValid && isLinesValid && hasCashCredit && totals.isBalanced;
+            document.getElementById('btn-posting').disabled = !allValid;
+
+            return allValid;
+        }
+
+        function updateRuleUI(elementId, isValid) {
+            const el = document.getElementById(elementId);
+            const icon = el.querySelector('.rule-icon');
+            if (isValid) {
+                icon.className = "rule-icon w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold bg-emerald-100 text-emerald-700";
+                icon.textContent = "✓";
+                el.classList.add('text-slate-800');
+                el.classList.remove('text-slate-500');
+            } else {
+                icon.className = "rule-icon w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold bg-slate-200 text-slate-600";
+                icon.textContent = "✕";
+                el.classList.remove('text-slate-800');
+                el.classList.add('text-slate-500');
+            }
+        }
+
+        // Tombol Isi Contoh Uji
+        function isiContohUji() {
+            document.getElementById('field-penerima').value = "PT Jasa Sewa Properti";
+            document.getElementById('field-aktivitas').value = "Operasi";
+            document.getElementById('field-deskripsi').value = "Pembayaran beban sewa gedung kantor bulan berjalan.";
+
+            // Reset dan buat 2 baris sesuai permintaan: Beban Sewa 5.000.000 debit, Bank 5.000.000 kredit
+            journalRows = [];
+            addRow("5-2200", 5000000, 0); // Beban Sewa debit 5jt
+            addRow("1-1200", 0, 5000000); // Bank kredit 5jt
+
+            renderRows();
+            validateForm();
+            showModal("Contoh Dimuat", "Form telah diisi dengan contoh transaksi Beban Sewa vs Bank senilai Rp 5.000.000.");
+        }
+
+        // Fungsi Penghitungan SHA-256 Hash Checksum Kanonik
+        async function calculateHash(dataString) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(dataString);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hashHex;
+        }
+
+        // Proses Posting Jurnal & Immutability Audit Trail
+        async function postJournal() {
+            if (!validateForm()) return;
+
+            const tanggal = document.getElementById('field-tanggal').value;
+            const nomorBukti = document.getElementById('field-nomor').value;
+            const penerima = document.getElementById('field-penerima').value.trim();
+            const aktivitas = document.getElementById('field-aktivitas').value;
+            const deskripsi = document.getElementById('field-deskripsi').value.trim();
+            const created_by = "kasir.demo";
+            const created_at = new Date().toISOString();
+
+            // Ambil hash sebelumnya dari jurnal terakhir (jika ada)
+            let prevHash = "0000000000000000000000000000000000000000000000000000000000000000";
+            if (postedJournals.length > 0) {
+                prevHash = postedJournals[postedJournals.length - 1].hash_checksum;
+            }
+
+            // Format baris kanonik: akun:debit:kredit
+            const rowsCanonical = journalRows.map(r => `${r.account}:${r.debit}:${r.kredit}`).join('|');
+
+            // Susun data kanonik sesuai spesifikasi urutan:
+            // id|nomor bukti|tanggal|deskripsi|created_by|created_at|hash sebelumnya|baris
+            const journalId = 'JRN-' + Date.now();
+            const canonicalString = `${journalId}|${nomorBukti}|${tanggal}|${deskripsi}|${created_by}|${created_at}|${prevHash}|${rowsCanonical}`;
+
+            const hash_checksum = await calculateHash(canonicalString);
+
+            const newJournal = {
+                id: journalId,
+                nomorBukti,
+                tanggal,
+                penerima,
+                aktivitas,
+                deskripsi,
+                created_by,
+                created_at,
+                rows: JSON.parse(JSON.stringify(journalRows)),
+                prevHash,
+                hash_checksum,
+                isReversed: false
+            };
+
+            postedJournals.push(newJournal);
+            logAudit('POST_JOURNAL', `Jurnal ${nomorBukti} diposting sukses. Hash: ${hash_checksum.substring(0, 12)}...`);
+
+            // Reset form dan increment nomor bukti
+            autoNumberCounter++;
+            updateVoucherNumber();
+            document.getElementById('field-penerima').value = '';
+            document.getElementById('field-deskripsi').value = '';
+            journalRows = [];
+            addRow();
+            addRow();
+            renderRows();
+            validateForm();
+
+            renderPostedJournals();
+            showModal("Sukses", `Jurnal Kas Keluar ${nomorBukti} berhasil diposting secara permanen dengan pengamanan Hash Checksum.`);
+        }
+
+        // Render Daftar Jurnal Terposting (Immutability Enforced)
+        function renderPostedJournals() {
+            const container = document.getElementById('posted-journals-container');
+            container.innerHTML = '';
+
+            if (postedJournals.length === 0) {
+                container.innerHTML = '<p class="text-xs text-slate-400 italic text-center py-4">Belum ada transaksi terposting.</p>';
+                return;
+            }
+
+            postedJournals.forEach((jurnal) => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs space-y-2";
+
+                let rowsHtml = '';
+                jurnal.rows.forEach(r => {
+                    rowsHtml += `<div class="flex justify-between font-mono-ledger text-[11px] text-slate-600">
+                        <span>${r.account}</span>
+                        <span>D: ${formatRupiah(r.debit)} | K: ${formatRupiah(r.kredit)}</span>
+                    </div>`;
+                });
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="font-bold text-slate-800">${jurnal.nomorBukti}</span>
+                            <span class="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded ml-2 font-mono-ledger">POSTED</span>
+                        </div>
+                        <span class="text-[10px] text-slate-400">${jurnal.tanggal}</span>
+                    </div>
+                    <p class="text-slate-600 line-clamp-1"><strong>Penerima:</strong> ${jurnal.penerima}</p>
+                    <p class="text-slate-600 line-clamp-1"><strong>Ket:</strong> ${jurnal.deskripsi}</p>
+                    <div class="border-t border-slate-200 pt-1.5 space-y-1">
+                        ${rowsHtml}
+                    </div>
+                    <div class="bg-slate-200/60 p-1.5 rounded font-mono-ledger text-[10px] text-slate-500 truncate" title="Hash: ${jurnal.hash_checksum}">
+                        Hash: ${jurnal.hash_checksum}
+                    </div>
+                    <div class="flex gap-2 pt-1">
+                        <button type="button" onclick="attemptModify('${jurnal.nomorBukti}')" class="flex-1 bg-white hover:bg-slate-100 text-slate-700 font-medium py-1 px-2 rounded border border-slate-300 transition text-[11px]">
+                            Coba ubah/hapus
+                        </button>
+                        ${!jurnal.isReversed ? `<button type="button" onclick="createReversalJournal('${jurnal.id}')" class="bg-amber-100 hover:bg-amber-200 text-amber-800 font-medium py-1 px-2 rounded border border-amber-300 transition text-[11px]">Buat Jurnal Pembalik</button>` : `<span class="text-[10px] text-slate-400 italic self-center">Sudah dibalik</span>`}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Pesan Penolakan Ubah / Hapus & Saran Jurnal Pembalik
+        function attemptModify(nomorBukti) {
+            showModal("Penolakan Immutability", `Jurnal ${nomorBukti} berstatus POSTED dan dilindungi oleh protokol Audit Trail Immutability. Dokumen akuntansi tidak boleh diubah atau dihapus secara langsung. Silakan gunakan fitur "Buat jurnal pembalik" untuk mengoreksi transaksi sesuai standar audit internal.`, true);
+            logAudit('ATTEMPT_TAMPER', `Percobaan ilegal mengubah/menghapus jurnal terposting ${nomorBukti} ditolak sistem.`);
+        }
+
+        // Pembuatan Jurnal Pembalik (Reversal Journal)
+        async function createReversalJournal(journalId) {
+            const original = postedJournals.find(j => j.id === journalId);
+            if (!original || original.isReversed) return;
+
+            // Tandai original sebagai sudah dibalik
+            original.isReversed = true;
+
+            const year = new Date().getFullYear();
+            const revNomor = `REV-${original.nomorBukti}`;
+            const tanggal = new Date().toISOString().split('T')[0];
+            const deskripsi = `Jurnal Pembalik (Reversal) untuk transaksi ${original.nomorBukti}`;
+            const created_by = "kasir.demo";
+            const created_at = new Date().toISOString();
+
+            // Tukar debit dan kredit dari baris original
+            const reversedRows = original.rows.map(r => ({
+                id: 'rev_' + Math.random().toString(36).substr(2, 9),
+                account: r.account,
+                debit: r.kredit,    // Tukar
+                kredit: r.debit     // Tukar
+            }));
+
+            const prevHash = postedJournals[postedJournals.length - 1].hash_checksum;
+            const rowsCanonical = reversedRows.map(r => `${r.account}:${r.debit}:${r.kredit}`).join('|');
+            const revId = 'JRN-' + Date.now();
+            const canonicalString = `${revId}|${revNomor}|${tanggal}|${deskripsi}|${created_by}|${created_at}|${prevHash}|${rowsCanonical}`;
+            const hash_checksum = await calculateHash(canonicalString);
+
+            const reversalJournal = {
+                id: revId,
+                nomorBukti: revNomor,
+                tanggal,
+                penerima: original.penerima,
+                aktivitas: original.aktivitas,
+                deskripsi,
+                created_by,
+                created_at,
+                rows: reversedRows,
+                prevHash,
+                hash_checksum,
+                isReversed: true
+            };
+
+            postedJournals.push(reversalJournal);
+            logAudit('POST_REVERSAL', `Jurnal pembalik ${revNomor} berhasil dibuat untuk merevisi ${original.nomorBukti}.`);
+
+            renderPostedJournals();
+            showModal("Jurnal Pembalik Dibuat", `Jurnal pembalik dengan nomor ${revNomor} berhasil diposting.`);
+        }
+
+        // Verifikasi Rantai Hash (Integrity Check)
+        async function verifyHashChain() {
+            if (postedJournals.length === 0) {
+                showModal("Verifikasi Hash", "Belum ada jurnal tervalidasi dalam rantai.");
+                return;
+            }
+
+            let isValidChain = true;
+            let brokenIndex = -1;
+
+            for (let i = 0; i < postedJournals.length; i++) {
+                const j = postedJournals[i];
+                let expectedPrevHash = i === 0 ? "0000000000000000000000000000000000000000000000000000000000000000" : postedJournals[i - 1].hash_checksum;
+                
+                if (j.prevHash !== expectedPrevHash) {
+                    isValidChain = false;
+                    brokenIndex = i;
+                    break;
+                }
+
+                // Hitung ulang hash kanonik
+                const rowsCanonical = j.rows.map(r => `${r.account}:${r.debit}:${r.kredit}`).join('|');
+                const canonicalString = `${j.id}|${j.nomorBukti}|${j.tanggal}|${j.deskripsi}|${j.created_by}|${j.created_at}|${j.prevHash}|${rowsCanonical}`;
+                const recalculatedHash = await calculateHash(canonicalString);
+
+                if (recalculatedHash !== j.hash_checksum) {
+                    isValidChain = false;
+                    brokenIndex = i;
+                    break;
+                }
+            }
+
+            if (isValidChain) {
+                showModal("Verifikasi Berhasil", "Seluruh rantai hash kriptografis valid! Tidak ada manipulasi atau diskrepansi data yang terdeteksi pada buku besar.");
+                logAudit('VERIFY_CHAIN', 'Verifikasi rantai hash sukses: Integritas data terjamin.');
+            } else {
+                showModal("Peringatan Integritas!", `Rantai hash rusak atau tidak cocok pada jurnal indeks ke-${brokenIndex + 1}! Terdeteksi potensi modifikasi data ilegal.`, true);
+                logAudit('VERIFY_FAIL', `Verifikasi rantai hash gagal pada indeks ${brokenIndex + 1}!`);
+            }
+        }
+
+        // Audit Log Append-Only
+        function logAudit(action, details) {
+            const timestamp = new Date().toLocaleTimeString('id-ID');
+            auditLogs.unshift({ timestamp, action, details });
+
+            const container = document.getElementById('audit-log-container');
+            container.innerHTML = '';
+
+            auditLogs.forEach(log => {
+                const div = document.createElement('div');
+                div.className = "border-b border-slate-800 pb-1";
+                div.innerHTML = `<span class="text-slate-500">[${log.timestamp}]</span> <span class="text-amber-400">${log.action}:</span> ${log.details}`;
+                container.appendChild(div);
+            });
+        }
+    </script>
+</body>
+</html>
